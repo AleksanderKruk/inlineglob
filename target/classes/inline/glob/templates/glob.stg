@@ -1,0 +1,70 @@
+
+
+glob_trivial(input_string, string) ::= <<
+return input_string.equals("<string>")
+>>
+
+glob_without_star(pattern_length, chars) ::= <<
+const long pattern_length = pattern.length();
+long i = 0;
+<expect_length_equal_to(pattern_length)>
+$! <chars:{c|<(c.name).()>}> !$
+
+>>
+
+glob_with_star(pattern_length) ::= <<
+const long input_length = input_string.length();
+<expect_length_less_than(pattern_length)>
+
+>>
+
+simple_char(char) ::= <<
+if (<mismatched_char(char)>) {
+    return false;
+}
+<next_char()>;
+>>
+
+mismatched_char(char) ::= <<input_string.charAt(i) != '<char>'>>
+matched_char(char) ::= <<input_string.charAt(i) == '<char>'>>
+
+any_char() ::= <<
+if (<eos()>) {
+    return false;
+}
+<next_char()>;
+>>
+
+class_char(chars) ::= <<
+if (<chars:mismatched_char; separator=" && ">) {
+    return false;
+}
+<next_char()>;
+>>
+
+negated_class_char(chars) ::= <<
+if (<chars:matched_char; separator=" || ">) {
+    return false;
+}
+<next_char()>;
+>>
+
+next_char() ::= <<i++>>
+
+eos() ::= <<i >= input_length>>
+
+expect_length_equal_to(pattern_length) ::= <<
+if (input_length == <pattern_length>) {
+    return false;
+}
+>>
+
+expect_length_less_than(pattern_length) ::= <<
+if (input_length >= <pattern_length>) {
+    return false;
+}
+>>
+
+test(name) ::= <<
+    Hello <name>
+>>
