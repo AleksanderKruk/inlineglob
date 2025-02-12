@@ -14,7 +14,7 @@ import org.stringtemplate.v4.STGroupFile;
  * Hello world!
  *
  */
-public class App
+public class InlineGlob
 {
     public static void main( String[] args ) throws IOException
     {
