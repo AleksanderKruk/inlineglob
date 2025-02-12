@@ -1,4 +1,5 @@
 grammar Glob;
+
 glob: quant+;
 quant: ANY | STAR | character_class;
 character_class: CHAR | LBRACKET NEG? (range | CHAR)+ RBRACKET;
