@@ -5,8 +5,11 @@ import java.io.IOError;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collection;
 
-import org.antlr.runtime.TokenStream;
+import org.antlr.v4.runtime.TokenStream;
+import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.xpath.XPath;
 import org.stringtemplate.v4.ST;
@@ -19,6 +22,37 @@ import org.stringtemplate.v4.STGroupFile;
  */
 public class InlineGlob
 {
+    interface CharClass {
+        public String getType();
+    }
+
+    public static class AnyChar implements CharClass {
+        public String getType() {
+            return "any_char";
+        }
+    }
+
+    public static class Char implements CharClass {
+        final String char_;
+        @Override
+        public String getType() {
+            return "char";
+        }
+        public String getChar() {
+            return char_;
+        }
+        Char(final String char__) {
+            char_ = char__;
+        }
+    }
+
+    // public static class Char implements CharClass {
+    //     final String type = "char";
+    //     final String char_;
+    //     Char(final String char__) {
+    //         char_ = char__;
+    //     }
+    // }
 
     public static void main( String[] args ) throws IOException
     {
@@ -38,8 +72,21 @@ public class InlineGlob
             result = trivial.render();
         }
         else if (star_node_count == 0) {
-            final ST withStar = templates.getInstanceOf("with_star");
-            result = withStar.render();
+            final ST withoutStar = templates.getInstanceOf("glob_without_star");
+            final Collection<ParseTree> quants = XPath.findAll(tree, "//quant", parser);
+            withoutStar.add("pattern_length", pattern.length());
+            // withoutStar.inspect();
+            var charClasses = new ArrayList<CharClass>();
+            for (final var quant : quants) {
+                final String text = quant.getText();
+                switch (text) {
+                    case "?" -> charClasses.add(new AnyChar());
+                    default -> charClasses.add(new Char(text));
+                }
+            }
+            withoutStar.add("char_classes", charClasses);
+            withoutStar.inspect();
+            result = withoutStar.render();
             // withStar.add()
         }  else {
 

@@ -4,52 +4,56 @@ glob_trivial(string) ::= <<
 return input_string.equals("<string>");
 >>
 
-glob_without_star(pattern_length, chars) ::= <<
+glob_without_star(pattern_length, char_classes) ::= <<
 const long pattern_length = pattern.length();
 long i = 0;
 <expect_length_equal_to(pattern_length)>
+<char_classes:{char_class |<(char_class.type)(char_class)>}>
+return true;
 >>
 
 glob_with_star(pattern_length) ::= <<
 const long input_length = input_string.length();
 <expect_length_less_than(pattern_length)>
-
+<char_classes:{char_class |<(char_class.type)(char_class)>}>
+return true;
 >>
 
 
-
-simple_char(char) ::= <<
-if (<mismatched_char(char)>) {
+char(node) ::= <<
+if (<mismatched_char(node.char)>) {
     return false;
 }
-<next_char()>;
+<next_char()>
 >>
 
 mismatched_char(char) ::= <<input_string.charAt(i) != '<char>'>>
 matched_char(char) ::= <<input_string.charAt(i) == '<char>'>>
 
-any_char() ::= <<
+any_char(node) ::= <<
 if (<eos()>) {
     return false;
 }
-<next_char()>;
+<next_char()>
 >>
 
-class_char(chars) ::= <<
-if (<chars:mismatched_char(); separator=" && ">) {
+character_class(node) ::= <<
+if (<node.chars:mismatched_char(); separator=" && ">) {
     return false;
 }
-<next_char()>;
+<next_char()>
 >>
 
-negated_class_char(chars) ::= <<
-if (<chars:matched_char(); separator=" || ">) {
+negated_character_class(node) ::= <<
+if (<node.chars:matched_char(); separator=" || ">) {
     return false;
 }
-<next_char()>;
+<next_char()>
 >>
 
-next_char() ::= <<i++>>
+next_char() ::= <<
+i++;
+>>
 
 eos() ::= <<i >= input_length>>
 
