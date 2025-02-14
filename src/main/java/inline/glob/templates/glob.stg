@@ -31,24 +31,37 @@ mismatched_char(char) ::= <<input_string.charAt(i) != '<char>'>>
 matched_char(char) ::= <<input_string.charAt(i) == '<char>'>>
 
 any_char(node) ::= <<
-if (<eos()>) {
+if (<mismatched_any_char(node)>) {
     return false;
 }
 <next_char()>
 >>
+matched_any_char(node) ::= "<not_eos()>"
+mismatched_any_char(node) ::= "<eos()>"
 
 character_class(node) ::= <<
-if (<node.chars:mismatched_char(); anchor, separator="\n && ">) {
+if (<mismatched_character_class(node)>) {
     return false;
 }
 <next_char()>
 >>
+matched_character_class(node) ::= <<<node.chars:matched_char(); anchor, separator="\n || ">>>
+mismatched_character_class(node) ::= <<<node.chars:mismatched_char(); anchor, separator="\n && ">>>
 
 negated_character_class(node) ::= <<
-if (<node.chars:matched_char(); anchor, separator="\n || ">) {
+if (<mismatched_negated_character_class(node)>) {
     return false;
 }
 <next_char()>
+>>
+matched_negated_character_class(node) ::= matched_character_class(node)
+mismatched_negated_character_class(node) ::= mismatched_character_class(node)
+
+star(node) ::= <<
+while (<not_eos()> ) {
+    <node.next:{next|<(next.type)(next)>}>
+    <next_char()>;
+}
 >>
 
 next_char() ::= <<
@@ -56,6 +69,7 @@ i++;
 >>
 
 eos() ::= <<i >= input_length>>
+not_eos() ::= <<i < input_length>>
 
 expect_length_equal_to(pattern_length) ::= <<
 if (input_length != <pattern_length>) {
