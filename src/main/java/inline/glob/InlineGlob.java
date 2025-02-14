@@ -135,6 +135,7 @@ public class InlineGlob
             final long length_contraint = pattern.length() - star_node_count;
             withoutStar.add("pattern_length", length_contraint);
             final var charClasses = InlineGlob.mapToClasses(quants, parser);
+
             withoutStar.add("char_classes", charClasses);
             result = withoutStar.render();
         }  else {
