@@ -38,14 +38,14 @@ if (<eos()>) {
 >>
 
 character_class(node) ::= <<
-if (<node.chars:mismatched_char(); separator=" && ">) {
+if (<node.chars:mismatched_char(); anchor, separator="\n && ">) {
     return false;
 }
 <next_char()>
 >>
 
 negated_character_class(node) ::= <<
-if (<node.chars:matched_char(); separator=" || ">) {
+if (<node.chars:matched_char(); anchor, separator="\n || ">) {
     return false;
 }
 <next_char()>
@@ -58,13 +58,13 @@ i++;
 eos() ::= <<i >= input_length>>
 
 expect_length_equal_to(pattern_length) ::= <<
-if (input_length == <pattern_length>) {
+if (input_length != <pattern_length>) {
     return false;
 }
 >>
 
 expect_length_greater_than(pattern_length) ::= <<
-if (input_length >= <pattern_length>) {
+if (input_length < <pattern_length>) {
     return false;
 }
 >>
