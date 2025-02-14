@@ -14,7 +14,7 @@ return true;
 
 glob_with_star(pattern_length) ::= <<
 const long input_length = input_string.length();
-<expect_length_less_than(pattern_length)>
+<expect_length_greater_than(pattern_length)>
 <char_classes:{char_class |<(char_class.type)(char_class)>}>
 return true;
 >>
@@ -63,7 +63,7 @@ if (input_length == <pattern_length>) {
 }
 >>
 
-expect_length_less_than(pattern_length) ::= <<
+expect_length_greater_than(pattern_length) ::= <<
 if (input_length >= <pattern_length>) {
     return false;
 }
