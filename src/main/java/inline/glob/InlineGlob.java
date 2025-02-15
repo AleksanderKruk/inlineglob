@@ -112,12 +112,11 @@ public class InlineGlob
     public static final java.util.regex.Pattern multistar = Pattern.compile("\\*{2,}");
     public static String optimizePattern(String pattern) {
         return multistar.matcher(pattern).replaceAll("*");
-
     }
 
-    public static void main( String[] args ) throws IOException
+    public static void main(String[] args) throws IOException
     {
-        final String pattern = args[0];
+        final String pattern = InlineGlob.optimizePattern(args[0]);
         final var charStream = CharStreams.fromString(pattern);
         final var lexer = new GlobLexer(charStream);
         final var tokenStream = new CommonTokenStream(lexer);
@@ -144,7 +143,6 @@ public class InlineGlob
             final long length_contraint = pattern.length() - star_node_count;
             withoutStar.add("pattern_length", length_contraint);
             final var charClasses = InlineGlob.mapToClasses(quants, parser);
-
             withoutStar.add("char_classes", charClasses);
             result = withoutStar.render();
         }  else {
