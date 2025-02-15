@@ -8,11 +8,13 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import org.antlr.v4.runtime.TokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.xpath.XPath;
+import org.antlr.v4.runtime.tree.pattern.ParseTreePatternMatcher;
 import org.stringtemplate.v4.ST;
 import org.stringtemplate.v4.STGroupDir;
 import org.stringtemplate.v4.STGroupFile;
@@ -91,21 +93,26 @@ public class InlineGlob
                     case "*" -> charClasses.add(new Star());
                     default -> charClasses.add(new Char(text));
                 }
-            }
-            else {
+            } else {
                 System.out.println();
                 final boolean isNegated = XPath.findAll(quant, "//NEG", parser).size() != 0;
-                final List<String> chars =  XPath.findAll(quant, "//CHAR", parser)
+                final List<String> chars = XPath.findAll(quant, "//CHAR", parser)
                         .stream().map(ParseTree::toString).toList();
                 if (isNegated) {
                     charClasses.add(new NegatedCharacterClass(chars));
-                }
-                else {
+                } else {
                     charClasses.add(new CharacterClass(chars));
                 }
             }
         }
         return charClasses;
+    }
+
+
+    public static final java.util.regex.Pattern multistar = Pattern.compile("\\*{2,}");
+    public static String optimizePattern(String pattern) {
+        return multistar.matcher(pattern).replaceAll("*");
+
     }
 
     public static void main( String[] args ) throws IOException
@@ -116,6 +123,8 @@ public class InlineGlob
         final var tokenStream = new CommonTokenStream(lexer);
         final var parser = new GlobParser(tokenStream);
         final var tree = parser.glob();
+
+
         final long star_node_count = XPath.findAll(tree, "//STAR", parser).size();
         final long any_node_count = XPath.findAll(tree, "//ANY", parser).size();
         final long bracketed_class_count = XPath.findAll(tree, "//LBRACKET", parser).size();
