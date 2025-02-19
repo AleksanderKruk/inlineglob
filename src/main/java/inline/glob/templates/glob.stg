@@ -80,11 +80,14 @@ restore_index_continue(postfix) ::= <<
 continue;
 >>
 
+next_char_continue() ::= <<
+<nextChar()>
+continue;
+>>
+
 star(node, onmismatch="") ::= <<
 while (<not_eos()>) {
-    <first(node.chars):{
-        c | <(c.type)(c, next_char())>
-    }>
+    <first(node.chars):{ c | <(c.type)(c, next_char_continue())> }>
     <next_char()>
     <save_index(node.index)>
     <rest(node.chars):{
