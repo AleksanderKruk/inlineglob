@@ -1,75 +1,119 @@
 
 
 glob_trivial(string) ::= <<
-return input_string.equals("<string>");
+return inputString.equals("<string>");
 >>
 
 glob_without_star(pattern_length, char_classes) ::= <<
-const long pattern_length = pattern.length();
+const long input_length = inputString.length();
 long i = 0;
 <expect_length_equal_to(pattern_length)>
 <char_classes:{char_class |<(char_class.type)(char_class)>}>
 return true;
 >>
 
-glob_with_star(pattern_length) ::= <<
-const long input_length = input_string.length();
+glob_with_star(pattern_length, prefix_chars, first_star) ::= <<
+const long input_length = inputString.length();
 <expect_length_greater_than(pattern_length)>
-<char_classes:{char_class |<(char_class.type)(char_class)>}>
+<prefix_chars:{char_class |<(char_class.type)(char_class)>}>
+<first_star:star()>
 return true;
 >>
 
 
-char(node) ::= <<
+char(node, onmismatch="return false;") ::= <<
 if (<mismatched_char(node.char)>) {
-    return false;
+    <onmismatch>
 }
 <next_char()>
 >>
 
-mismatched_char(char) ::= <<input_string.charAt(i) != '<char>'>>
-matched_char(char) ::= <<input_string.charAt(i) == '<char>'>>
+mismatched_char(char) ::= <<inputString.charAt(i) != '<char>'>>
+matched_char(char) ::= <<inputString.charAt(i) == '<char>'>>
 
-any_char(node) ::= <<
+any_char(node, onmismatch="return false;") ::= <<
 if (<mismatched_any_char(node)>) {
-    return false;
+    <onmismatch>
 }
 <next_char()>
 >>
 matched_any_char(node) ::= "<not_eos()>"
 mismatched_any_char(node) ::= "<eos()>"
 
-character_class(node) ::= <<
+character_class(node, onmismatch="return false;") ::= <<
 if (<mismatched_character_class(node)>) {
-    return false;
+    <onmismatch>
 }
 <next_char()>
 >>
-matched_character_class(node) ::= <<<node.chars:matched_char(); anchor, separator="\n || ">>>
-mismatched_character_class(node) ::= <<<node.chars:mismatched_char(); anchor, separator="\n && ">>>
+matched_character_class(node) ::= <%
+<node.chars:matched_char(); anchor, separator="\n || ">
+%>
 
-negated_character_class(node) ::= <<
+mismatched_character_class(node) ::= <%
+<node.chars:mismatched_char(); anchor, separator="\n && ">
+%>
+
+negated_character_class(node, onmismatch="return false;") ::= <<
 if (<mismatched_negated_character_class(node)>) {
-    return false;
+    <onmismatch>
 }
 <next_char()>
 >>
-matched_negated_character_class(node) ::= matched_character_class(node)
-mismatched_negated_character_class(node) ::= mismatched_character_class(node)
+matched_negated_character_class(node) ::= <%
+<mismatched_character_class(node)>
+%>
+mismatched_negated_character_class(node) ::= <%
+<matched_character_class(node)>
+%>
 
-star(node) ::= <<
-while (<not_eos()> ) {
-    <node.next:{next|<(next.type)(next)>}>
+save_index(postfix) ::= <<
+long saved<postfix> = i + 1;
+>>
+
+restore_index(postfix) ::= <<
+i = saved<postfix>;
+>>
+
+restore_index_continue(postfix) ::= <<
+<restore_index(postfix)>
+continue;
+>>
+
+star(node, onmismatch="") ::= <<
+while (<not_eos()>) {
+    <first(node.chars):{
+        c | <(c.type)(c, next_char())>
+    }>
+    <next_char()>
+    <save_index(node.index)>
+    <rest(node.chars):{
+        c | <(c.type)(c, restore_index_continue(node.index))>
+    }>
     <next_char()>;
+    <if(node.nextStar)>
+    <node.nextStar>
+    <else>
+    if (<not_eos()>) {
+        <restore_index_continue(node.index)>
+    }
+    return true;
+    <endif>
 }
 >>
+
+
+
 
 next_char() ::= <<
 i++;
 >>
 
-eos() ::= <<i >= input_length>>
-not_eos() ::= <<i < input_length>>
+eos() ::= <%i >= input_length%>
+
+not_eos() ::= <%
+    i < input_length
+%>
 
 expect_length_equal_to(pattern_length) ::= <<
 if (input_length != <pattern_length>) {

@@ -8,7 +8,10 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 import org.antlr.v4.runtime.TokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
@@ -36,9 +39,27 @@ public class InlineGlob
     }
 
     public static class Star implements CharClassNode {
+        private final List<CharClassNode> chars;
+        private final CharClassNode nextStar;
+
+
+        public Star(List<CharClassNode> chars, CharClassNode nextStar) {
+            this.chars = chars;
+            this.nextStar = nextStar;
+        }
+
+        public CharClassNode getNextStar() {
+            return nextStar;
+        }
+
+        public List<CharClassNode> getChars() {
+            return chars;
+        }
+
         public String getType() {
             return "star";
         }
+
     }
 
     public static class NegatedCharacterClass implements CharClassNode {
@@ -82,31 +103,63 @@ public class InlineGlob
     }
 
 
+
     public static ArrayList<CharClassNode> mapToClasses(Collection<ParseTree> quants, Parser parser) {
         var charClasses = new ArrayList<CharClassNode>();
         for (final var quant : quants) {
-            final String text = quant.getText();
-            final boolean oneChar = XPath.findAll(quant, "//LBRACKET", parser).size() == 0;
-            if (oneChar) {
-                switch (text) {
-                    case "?" -> charClasses.add(new AnyChar());
-                    case "*" -> charClasses.add(new Star());
-                    default -> charClasses.add(new Char(text));
-                }
-            } else {
-                System.out.println();
-                final boolean isNegated = XPath.findAll(quant, "//NEG", parser).size() != 0;
-                final List<String> chars = XPath.findAll(quant, "//CHAR", parser)
-                        .stream().map(ParseTree::toString).toList();
-                if (isNegated) {
-                    charClasses.add(new NegatedCharacterClass(chars));
-                } else {
-                    charClasses.add(new CharacterClass(chars));
-                }
-            }
+            CharClassNode charClass = mapToClass(parser, quant);
+            charClasses.add(charClass);
         }
         return charClasses;
     }
+
+
+    private static CharClassNode mapToClass(Parser parser, final ParseTree quant) {
+        final String text = quant.getText();
+        final boolean oneChar = XPath.findAll(quant, "//LBRACKET", parser).size() == 0;
+        if (oneChar) {
+            return switch (text) {
+                case "?" -> new AnyChar();
+                default -> new Char(text);
+            };
+        } else {
+            final boolean isNegated = XPath.findAll(quant, "//NEG", parser).size() != 0;
+            final List<String> chars = XPath.findAll(quant, "//CHAR", parser)
+                    .stream().map(ParseTree::toString).toList();
+            if (isNegated) {
+                return (new NegatedCharacterClass(chars));
+            } else {
+                return (new CharacterClass(chars));
+            }
+        }
+    }
+
+
+
+
+    final static Predicate<ParseTree> isStar = q -> !q.toString().equals("*");
+    final static Predicate<ParseTree> isNotStar = isStar.negate();
+
+
+    record PrefixCharsWithFirstStar(List<CharClassNode> prefixChars, CharClassNode firstStar) {
+    };
+    public static PrefixCharsWithFirstStar mapToStars(Collection<ParseTree> quants, Parser parser) {
+        List<CharClassNode> prefixChars = quants.stream()
+            .takeWhile(isNotStar).map(q->mapToClass(parser, q)).toList();
+        final var firstStar = makeStar(prefixChars.size(), quants, parser);
+        return new PrefixCharsWithFirstStar(prefixChars, firstStar);
+    }
+
+    public static CharClassNode makeStar(int nodeIndex, Collection<ParseTree> quants, Parser parser) {
+        List<CharClassNode> chars = quants.stream().skip(nodeIndex)
+            .takeWhile(isNotStar).map(q->mapToClass(parser, q)).toList();
+        var veryNextStar = makeStar(nodeIndex + chars.size(), quants, parser);
+        var nextStar = new Star(chars, veryNextStar);
+        return nextStar;
+
+    }
+
+
 
 
     public static final java.util.regex.Pattern multistar = Pattern.compile("\\*{2,}");
@@ -145,12 +198,13 @@ public class InlineGlob
             final var charClasses = InlineGlob.mapToClasses(quants, parser);
             withoutStar.add("char_classes", charClasses);
             result = withoutStar.render();
-        }  else {
+        } else {
             final ST withStar = templates.getInstanceOf("glob_with_star");
             final Collection<ParseTree> quants = XPath.findAll(tree, "//quant", parser);
+            final var prefixPlusStars = InlineGlob.mapToStars(quants, parser);
             withStar.add("pattern_length", pattern.length());
-            final var charClasses = InlineGlob.mapToClasses(quants, parser);
-            withStar.add("char_classes", charClasses);
+            withStar.add("prefix_chars", prefixPlusStars.prefixChars);
+            withStar.add("first_star", prefixPlusStars.firstStar);
             result = withStar.render();
         }
         System.out.println(result);
