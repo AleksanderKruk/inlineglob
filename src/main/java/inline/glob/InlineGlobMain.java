@@ -1,25 +1,15 @@
 package inline.glob;
 
-import java.io.File;
-import java.io.IOError;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
-import java.util.stream.Collector;
-import java.util.stream.Collectors;
-
-import org.antlr.v4.runtime.TokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.xpath.XPath;
-import org.antlr.v4.runtime.tree.pattern.ParseTreePatternMatcher;
 import org.stringtemplate.v4.ST;
-import org.stringtemplate.v4.STGroupDir;
 import org.stringtemplate.v4.STGroupFile;
 
 
@@ -138,7 +128,7 @@ public class InlineGlobMain
     final static Predicate<ParseTree> isNotStar = isStar.negate();
 
 
-    record PrefixCharsWithFirstStar(List<CharClassNode> prefixChars, CharClassNode firstStar) {
+    public record PrefixCharsWithFirstStar(List<CharClassNode> prefixChars, CharClassNode firstStar) {
     };
     public static PrefixCharsWithFirstStar mapToStars(Collection<ParseTree> quants, Parser parser) {
         List<CharClassNode> prefixChars = quants.stream()
