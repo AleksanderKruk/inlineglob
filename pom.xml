@@ -132,7 +132,7 @@
                     <configuration>
                         <transformers>
                             <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                <mainClass>inline.glob.InlineGlob</mainClass>
+                                <mainClass>inline.glob.GlobInliner</mainClass>
                             </transformer>
                         </transformers>
                     </configuration>
