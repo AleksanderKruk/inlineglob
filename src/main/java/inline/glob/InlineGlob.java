@@ -137,7 +137,7 @@ public class InlineGlob
 
 
 
-    final static Predicate<ParseTree> isStar = q -> !q.toString().equals("*");
+    final static Predicate<ParseTree> isStar = q -> q.getText().equals("*");
     final static Predicate<ParseTree> isNotStar = isStar.negate();
 
 
@@ -146,17 +146,19 @@ public class InlineGlob
     public static PrefixCharsWithFirstStar mapToStars(Collection<ParseTree> quants, Parser parser) {
         List<CharClassNode> prefixChars = quants.stream()
             .takeWhile(isNotStar).map(q->mapToClass(parser, q)).toList();
-        final var firstStar = makeStar(prefixChars.size(), quants, parser);
+        final var firstStar = makeStar(prefixChars.size() + 1, quants, parser);
         return new PrefixCharsWithFirstStar(prefixChars, firstStar);
     }
 
     public static CharClassNode makeStar(int nodeIndex, Collection<ParseTree> quants, Parser parser) {
+        if (nodeIndex >= quants.size()) {
+            return null;
+        }
         List<CharClassNode> chars = quants.stream().skip(nodeIndex)
             .takeWhile(isNotStar).map(q->mapToClass(parser, q)).toList();
-        var veryNextStar = makeStar(nodeIndex + chars.size(), quants, parser);
+        var veryNextStar = makeStar(nodeIndex + chars.size() + 1, quants, parser);
         var nextStar = new Star(chars, veryNextStar);
         return nextStar;
-
     }
 
 
@@ -169,7 +171,8 @@ public class InlineGlob
 
     public static void main(String[] args) throws IOException
     {
-        final String pattern = InlineGlob.optimizePattern(args[0]);
+        final String removedEscapedStars = args[0].replace("\\\\*", "*");
+        final String pattern = InlineGlob.optimizePattern(removedEscapedStars);
         final var charStream = CharStreams.fromString(pattern);
         final var lexer = new GlobLexer(charStream);
         final var tokenStream = new CommonTokenStream(lexer);

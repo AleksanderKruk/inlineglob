@@ -109,11 +109,9 @@ next_char() ::= <<
 i++;
 >>
 
-eos() ::= <%i >= input_length%>
+eos() ::= "i \>= input_length"
 
-not_eos() ::= <%
-    i < input_length
-%>
+not_eos() ::= "i \< input_length"
 
 expect_length_equal_to(pattern_length) ::= <<
 if (input_length != <pattern_length>) {
@@ -122,7 +120,7 @@ if (input_length != <pattern_length>) {
 >>
 
 expect_length_greater_than(pattern_length) ::= <<
-if (input_length < <pattern_length>) {
+if (input_length \< <pattern_length>) {
     return false;
 }
 >>
