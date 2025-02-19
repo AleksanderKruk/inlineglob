@@ -5,15 +5,15 @@ return inputString.equals("<string>");
 >>
 
 glob_without_star(pattern_length, char_classes) ::= <<
-const long input_length = inputString.length();
-long i = 0;
+final int input_length = inputString.length();
+int i = 0;
 <expect_length_equal_to(pattern_length)>
 <char_classes:{char_class |<(char_class.type)(char_class)>}>
 return true;
 >>
 
 glob_with_star(pattern_length, prefix_chars, first_star) ::= <<
-const long input_length = inputString.length();
+final int input_length = inputString.length();
 <expect_length_greater_than(pattern_length)>
 <prefix_chars:{char_class |<(char_class.type)(char_class)>}>
 <first_star:star()>
@@ -68,7 +68,7 @@ mismatched_negated_character_class(node) ::= <%
 %>
 
 save_index(postfix) ::= <<
-long saved<postfix> = i + 1;
+int saved<postfix> = i + 1;
 >>
 
 restore_index(postfix) ::= <<
