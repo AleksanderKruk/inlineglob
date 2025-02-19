@@ -5,15 +5,17 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Predicate;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.xpath.XPath;
 import org.stringtemplate.v4.ST;
 import org.stringtemplate.v4.STGroupFile;
+import java.nio.file.*;
 
 
-public class InlineGlobMain
+public class GlobInliner
 {
     interface CharClassNode {
         public String getType();
@@ -89,6 +91,47 @@ public class InlineGlobMain
         }
     }
 
+    public static String inline(String glob) {
+        final String pattern = GlobInliner.optimizePattern(glob);
+        final var charStream = CharStreams.fromString(pattern);
+        final var lexer = new GlobLexer(charStream);
+        final var tokenStream = new CommonTokenStream(lexer);
+        final var parser = new GlobParser(tokenStream);
+        final var tree = parser.glob();
+
+
+        final long star_node_count = XPath.findAll(tree, "//STAR", parser).size();
+        final long any_node_count = XPath.findAll(tree, "//ANY", parser).size();
+        final long bracketed_class_count = XPath.findAll(tree, "//LBRACKET", parser).size();
+        final var templates = new STGroupFile("./target/classes/inline/glob/templates/glob.stg");
+        String result = null;
+        if (star_node_count == 0
+                && any_node_count == 0
+                && bracketed_class_count == 0)
+        {
+            final ST trivial = templates.getInstanceOf("glob_trivial");
+            trivial.add("string", pattern);
+            result = trivial.render();
+        }
+        else if (star_node_count == 0) {
+            final ST withoutStar = templates.getInstanceOf("glob_without_star");
+            final Collection<ParseTree> quants = XPath.findAll(tree, "//quant", parser);
+            final long length_contraint = pattern.length() - star_node_count;
+            withoutStar.add("pattern_length", length_contraint);
+            final var charClasses = GlobInliner.mapToClasses(quants, parser);
+            withoutStar.add("char_classes", charClasses);
+            result = withoutStar.render();
+        } else {
+            final ST withStar = templates.getInstanceOf("glob_with_star");
+            final Collection<ParseTree> quants = XPath.findAll(tree, "//quant", parser);
+            final var prefixPlusStars = GlobInliner.mapToStars(quants, parser);
+            withStar.add("pattern_length", pattern.length());
+            withStar.add("prefix_chars", prefixPlusStars.prefixChars);
+            withStar.add("first_star", prefixPlusStars.firstStar);
+            result = withStar.render();
+        }
+        return result;
+    }
 
 
     public static ArrayList<CharClassNode> mapToClasses(Collection<ParseTree> quants, Parser parser) {
@@ -159,45 +202,12 @@ public class InlineGlobMain
     public static void main(String[] args) throws IOException
     {
         final String removedEscapedStars = args[0].replace("\\\\*", "*");
-        final String pattern = InlineGlobMain.optimizePattern(removedEscapedStars);
-        final var charStream = CharStreams.fromString(pattern);
-        final var lexer = new GlobLexer(charStream);
-        final var tokenStream = new CommonTokenStream(lexer);
-        final var parser = new GlobParser(tokenStream);
-        final var tree = parser.glob();
+        final String inlinedGlob = GlobInliner.inline(removedEscapedStars);
+        @InlineGlob(glob = "*.txt")
+        Matcher fm;
 
 
-        final long star_node_count = XPath.findAll(tree, "//STAR", parser).size();
-        final long any_node_count = XPath.findAll(tree, "//ANY", parser).size();
-        final long bracketed_class_count = XPath.findAll(tree, "//LBRACKET", parser).size();
-        final var templates = new STGroupFile("./target/classes/inline/glob/templates/glob.stg");
-        String result = null;
-        if (star_node_count == 0
-                && any_node_count == 0
-                && bracketed_class_count == 0)
-        {
-            final ST trivial = templates.getInstanceOf("glob_trivial");
-            trivial.add("string", pattern);
-            result = trivial.render();
-        }
-        else if (star_node_count == 0) {
-            final ST withoutStar = templates.getInstanceOf("glob_without_star");
-            final Collection<ParseTree> quants = XPath.findAll(tree, "//quant", parser);
-            final long length_contraint = pattern.length() - star_node_count;
-            withoutStar.add("pattern_length", length_contraint);
-            final var charClasses = InlineGlobMain.mapToClasses(quants, parser);
-            withoutStar.add("char_classes", charClasses);
-            result = withoutStar.render();
-        } else {
-            final ST withStar = templates.getInstanceOf("glob_with_star");
-            final Collection<ParseTree> quants = XPath.findAll(tree, "//quant", parser);
-            final var prefixPlusStars = InlineGlobMain.mapToStars(quants, parser);
-            withStar.add("pattern_length", pattern.length());
-            withStar.add("prefix_chars", prefixPlusStars.prefixChars);
-            withStar.add("first_star", prefixPlusStars.firstStar);
-            result = withStar.render();
-        }
-        System.out.println(result);
+        System.out.println(inlinedGlob);
     }
 
 }
