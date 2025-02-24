@@ -1,0 +1,9 @@
+
+string_predicate(package, class_name_suffix, predicate_body) ::= <<
+    <if(package)>package <package>;<endif>
+    import java.util.function.Predicate;
+    class GlobPredicate<class_name_suffix> implements Predicate<String> {
+        <predicate_body>
+    }
+>>
+
