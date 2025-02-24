@@ -52,10 +52,10 @@ public class DynamicCompiler {
         String sourceCode = """
             import java.util.function.Predicate;
             public class GeneratedPredicate implements Predicate<String> {
-                @Override
-                public boolean test(String input) {
-                    return input.length() > 5; // <- Wstawiony kod
-                }
+              @Override
+              public boolean test(String input) {
+                  return input.length() > 5; // <- Wstawiony kod
+              }
             }
             """;
 
@@ -95,23 +95,5 @@ public class DynamicCompiler {
         System.out.println("Czy 'hellooo' pasuje? " + predicate.test("hellooo"));
         return success;
     }
-
-    // private static class InMemoryJavaFileObject extends SimpleJavaFileObject {
-    //     private final String sourceCode;
-
-    //     protected InMemoryJavaFileObject(String className, String sourceCode)
-    //     {
-    //       super(java.net.URI.create("string:///"
-    //             + className.replace('.', '/')
-    //             + JavaFileObject.Kind.SOURCE.extension),
-    //             Kind.SOURCE);
-    //       this.sourceCode = sourceCode;
-    //     }
-
-    //     @Override
-    //     public CharSequence getCharContent(boolean ignoreEncodingErrors) {
-    //         return sourceCode;
-    //     }
-    // }
 
 }
