@@ -1,6 +1,7 @@
 package inline.glob;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -192,6 +193,37 @@ public class GlobInliner
     }
 
 
+    public static void compile(final String pattern) {
+        var code = GlobInliner.inline(pattern);
+        var compiler = new DynamicCompiler();
+        try {
+            compiler.compile(code);
+        } catch (ClassNotFoundException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (NoSuchMethodException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (InstantiationException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (IllegalArgumentException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (SecurityException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+    }
 
 
     private static final java.util.regex.Pattern multistar = Pattern.compile("\\*{2,}");
@@ -203,10 +235,6 @@ public class GlobInliner
     {
         final String removedEscapedStars = args[0].replace("\\\\*", "*");
         final String inlinedGlob = GlobInliner.inline(removedEscapedStars);
-        @InlineGlob(glob = "*.txt")
-        Matcher fm;
-
-
         System.out.println(inlinedGlob);
     }
 
