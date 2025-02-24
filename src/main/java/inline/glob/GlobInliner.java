@@ -134,7 +134,7 @@ public class GlobInliner
     }
 
 
-    public static ArrayList<CharClassNode> mapToClasses(Collection<ParseTree> quants, Parser parser) {
+    private static ArrayList<CharClassNode> mapToClasses(Collection<ParseTree> quants, Parser parser) {
         var charClasses = new ArrayList<CharClassNode>();
         for (final var quant : quants) {
             CharClassNode charClass = mapToClass(parser, quant);
@@ -167,20 +167,20 @@ public class GlobInliner
 
 
 
-    final static Predicate<ParseTree> isStar = q -> q.getText().equals("*");
-    final static Predicate<ParseTree> isNotStar = isStar.negate();
+    private final static Predicate<ParseTree> isStar = q -> q.getText().equals("*");
+    private final static Predicate<ParseTree> isNotStar = isStar.negate();
 
 
     public record PrefixCharsWithFirstStar(List<CharClassNode> prefixChars, CharClassNode firstStar) {
     };
-    public static PrefixCharsWithFirstStar mapToStars(Collection<ParseTree> quants, Parser parser) {
+    private static PrefixCharsWithFirstStar mapToStars(Collection<ParseTree> quants, Parser parser) {
         List<CharClassNode> prefixChars = quants.stream()
             .takeWhile(isNotStar).map(q->mapToClass(parser, q)).toList();
         final var firstStar = makeStar(prefixChars.size() + 1, quants, parser);
         return new PrefixCharsWithFirstStar(prefixChars, firstStar);
     }
 
-    public static CharClassNode makeStar(int nodeIndex, Collection<ParseTree> quants, Parser parser) {
+    private static CharClassNode makeStar(int nodeIndex, Collection<ParseTree> quants, Parser parser) {
         if (nodeIndex >= quants.size()) {
             return null;
         }
@@ -194,8 +194,8 @@ public class GlobInliner
 
 
 
-    public static final java.util.regex.Pattern multistar = Pattern.compile("\\*{2,}");
-    public static String optimizePattern(String pattern) {
+    private static final java.util.regex.Pattern multistar = Pattern.compile("\\*{2,}");
+    private static String optimizePattern(String pattern) {
         return multistar.matcher(pattern).replaceAll("*");
     }
 
