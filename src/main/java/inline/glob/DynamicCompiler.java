@@ -8,7 +8,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.Files;
 import java.util.*;
+import java.util.function.Predicate;
 
 public class DynamicCompiler {
   public static void main(String[] args) {
@@ -46,44 +48,51 @@ public class DynamicCompiler {
   public boolean compile(String args)
       throws ClassNotFoundException, IOException, NoSuchMethodException, IllegalAccessException,
       InvocationTargetException, InstantiationException, IllegalArgumentException, SecurityException {
-        String className = "HelloWorld";
+        String className = "GeneratedPredicate";
         String sourceCode = """
-            public class HelloWorld {
-                public void sayHello() {
-                    System.out.println("Hello, dynamically compiled world!");
+            import java.util.function.Predicate;
+            public class GeneratedPredicate implements Predicate<String> {
+                @Override
+                public boolean test(String input) {
+                    return input.length() > 5; // <- Wstawiony kod
                 }
             }
             """;
 
         // Katalog na skompilowane klasy
-        File outputDir = new File("out");
+        File outputDir = Files.createTempDirectory("_out").toFile();
         outputDir.mkdir();
 
-        // Zapis kodu do pliku
+        // Zapisujemy kod do pliku
         File sourceFile = new File(outputDir, className + ".java");
-        try (FileWriter writer = new FileWriter(sourceFile)) {
+        try (var writer = new java.io.FileWriter(sourceFile)) {
             writer.write(sourceCode);
         }
 
-        // Kompilacja pliku
+        // Kompilacja w locie
         JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
         StandardJavaFileManager fileManager = compiler.getStandardFileManager(null, null, null);
         Iterable<? extends JavaFileObject> compilationUnits = fileManager.getJavaFileObjects(sourceFile);
         boolean success = compiler.getTask(null, fileManager, null, List.of("-d", outputDir.getPath()), null, compilationUnits).call();
 
         if (!success) {
-            System.err.println("Kompilacja nie powiodła się!");
-            return false;
+          System.err.println("Kompilacja nie powiodła się!");
+          return success;
         }
 
         // Dynamiczne ładowanie klasy
         URLClassLoader classLoader = URLClassLoader.newInstance(new URL[]{outputDir.toURI().toURL()});
         Class<?> loadedClass = Class.forName(className, true, classLoader);
 
-        // Utworzenie instancji i wywołanie metody
+        // Tworzenie instancji klasy
         Object instance = loadedClass.getDeclaredConstructor().newInstance();
-        Method method = loadedClass.getMethod("sayHello");
-        method.invoke(instance);
+
+        // Rzutowanie na Predicate<String>
+        Predicate<String> predicate = (Predicate<String>) instance;
+
+        // Testujemy dynamicznie wygenerowany kod
+        System.out.println("Czy 'hello' pasuje? " + predicate.test("hello"));
+        System.out.println("Czy 'hellooo' pasuje? " + predicate.test("hellooo"));
         return success;
     }
 
