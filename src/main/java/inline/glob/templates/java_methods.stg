@@ -1,9 +1,11 @@
 
-string_predicate(package, class_name_suffix, predicate_body) ::= <<
-    <if(package)>package <package>;<endif>
-    import java.util.function.Predicate;
-    class GlobPredicate<class_name_suffix> implements Predicate<String> {
+string_predicate(package, class_name, predicate_body) ::= <<
+import java.util.function.Predicate;
+public class <class_name> implements Predicate\<String\> {
+    @Override
+    public boolean test(String inputString) {
         <predicate_body>
     }
+}
 >>
 

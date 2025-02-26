@@ -3,6 +3,7 @@ package inline.glob;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Predicate;
@@ -193,35 +194,54 @@ public class GlobInliner
     }
 
 
-    public static void compile(final String pattern) {
+    public static Predicate<String> compile(final String pattern) {
         var code = GlobInliner.inline(pattern);
         var compiler = new DynamicCompiler();
         try {
-            compiler.compile(code);
+            final var templates = new STGroupFile("./target/classes/inline/glob/templates/java_methods.stg");
+            final var predicate = templates.getInstanceOf("string_predicate");
+            predicate.add("class_name", "GlobPredicate");
+            predicate.add("predicate_body", code);
+            Class<?> compiled = compiler.compile("GlobPredicate", predicate.render());
+            if (compiled == null) {
+                System.err.println("Compilation error");
+            }
+            Object instance = compiled.getDeclaredConstructor().newInstance();
+
+            Predicate<String> globPredicate = (Predicate<String>) instance;
+            return globPredicate;
         } catch (ClassNotFoundException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
+            return null;
         } catch (NoSuchMethodException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
+            return null;
         } catch (IllegalAccessException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
+            return null;
         } catch (InvocationTargetException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
+            return null;
         } catch (InstantiationException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
+            return null;
         } catch (IllegalArgumentException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
+            return null;
         } catch (SecurityException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
+            return null;
         } catch (IOException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
+            return null;
         }
     }
 
@@ -236,6 +256,10 @@ public class GlobInliner
         final String removedEscapedStars = args[0].replace("\\\\*", "*");
         final String inlinedGlob = GlobInliner.inline(removedEscapedStars);
         System.out.println(inlinedGlob);
+        final Predicate<String> p = GlobInliner.compile(removedEscapedStars);
+        for (var test : Arrays.copyOfRange(args, 1, args.length)) {
+            System.out.println(test + ": " + p.test(test));
+        }
     }
 
 }

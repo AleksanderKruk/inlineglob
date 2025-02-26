@@ -1,6 +1,7 @@
 package inline.glob;
 
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
 
 import org.junit.Test;
 
@@ -10,12 +11,14 @@ import org.junit.Test;
  */
 public class GlobInlinerTest
 {
-    /**
-     * Rigorous Test :-)
-     */
+
     @Test
     public void simplePattern()
     {
-        // assertTrue();
+        var predicate = GlobInliner.compile("abcd");
+        assertTrue(predicate.test("abcd"));
+        assertFalse(predicate.test("bcd"));
+        assertFalse(predicate.test("abcde"));
+        assertFalse(predicate.test("abd"));
     }
 }
