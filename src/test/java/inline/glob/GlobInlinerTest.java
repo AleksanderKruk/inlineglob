@@ -32,6 +32,34 @@ public class GlobInlinerTest
         assertFalse(predicate.test(""));
     }
 
+    @Test
+    public void characterClass()
+    {
+        var predicate = GlobInliner.compile("[abc]");
+        assertTrue(predicate.test("a"));
+        assertTrue(predicate.test("b"));
+        assertTrue(predicate.test("c"));
+        assertFalse(predicate.test("abc"));
+        assertFalse(predicate.test("e"));
+        assertFalse(predicate.test("*"));
+        assertFalse(predicate.test("?"));
+        assertFalse(predicate.test(""));
+    }
+
+
+    @Test
+    public void negatedCharacterClass()
+    {
+        var predicate = GlobInliner.compile("[!abc]");
+        assertFalse(predicate.test("a"));
+        assertFalse(predicate.test("b"));
+        assertFalse(predicate.test("c"));
+        assertFalse(predicate.test("abc"));
+        assertTrue(predicate.test("e"));
+        assertTrue(predicate.test("*"));
+        assertTrue(predicate.test("?"));
+        assertFalse(predicate.test(""));
+    }
     // @Test
     // public void simplePattern()
     // {
